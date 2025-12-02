@@ -1,37 +1,19 @@
-name: CI/CD Deployment to GKE
-
-on:
-  push:
-    branches:
-      - main
-
-env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  GKE_CLUSTER: "my-cluster"
-  GKE_REGION: "us-central1"
-  DEPLOYMENT_NAME: "mlops-app"
-  REPOSITORY: "us-central1-docker.pkg.dev/project-cdab2309-f11d-4cf6-8b4/my-repo"
-  IMAGE: "us-central1-docker.pkg.dev/project-cdab2309-f11d-4cf6-8b4/my-repo/mlops-app"
-
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
-    container:
-      image: google/cloud-sdk:latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
 
-      - name: Authenticate with Google Cloud
-        uses: google-github-actions/auth@v1
+      - name: Install Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Configure gcloud
+      - name: Configure GCloud auth
         run: |
-          gcloud config set project "$PROJECT_ID"
           gcloud auth configure-docker us-central1-docker.pkg.dev
 
       - name: Build and Push Image
@@ -39,11 +21,10 @@ jobs:
           docker build -t "$IMAGE:$GITHUB_SHA" .
           docker push "$IMAGE:$GITHUB_SHA"
 
-      - name: Configure GKE credentials
+      - name: Configure GKE Credentials
         run: |
           gcloud container clusters get-credentials "$GKE_CLUSTER" \
-            --region "$GKE_REGION" \
-            --project "$PROJECT_ID"
+            --region "$GKE_REGION" --project "$PROJECT_ID"
 
       - name: Deploy to Kubernetes
         run: |
