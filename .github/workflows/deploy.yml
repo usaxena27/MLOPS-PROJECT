@@ -12,6 +12,7 @@ env:
   DEPLOYMENT_NAME: "mlops-app"
   REPOSITORY: "us-central1-docker.pkg.dev/project-cdab2309-f11d-4cf6-8b4/my-repo"
   IMAGE: "us-central1-docker.pkg.dev/project-cdab2309-f11d-4cf6-8b4/my-repo/mlops-app"
+  USE_GKE_GCLOUD_AUTH_PLUGIN: "True"   # 👈 important for kubectl auth
 
 permissions:
   contents: read
@@ -25,37 +26,33 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 🔐 Authenticate to Google Cloud using the SA key in secrets
       - name: Authenticate with Google Cloud
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      # 🧰 Install gcloud CLI
-      - name: Setup gcloud
+      # Install gcloud + kubectl + GKE auth plugin
+      - name: Setup gcloud, kubectl, and GKE auth plugin
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ env.PROJECT_ID }}
+          install_components: 'gke-gcloud-auth-plugin,kubectl'
 
-      # 🗝️ Configure Docker to use gcloud creds for Artifact Registry
       - name: Configure Artifact Registry auth
         run: |
           gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
 
-      # 🏗️ Build & push Docker image to Artifact Registry
       - name: Build and Push Image
         run: |
           docker build -t "$IMAGE:$GITHUB_SHA" .
           docker push "$IMAGE:$GITHUB_SHA"
 
-      # 🔗 Configure kube credentials for GKE
       - name: Configure GKE Credentials
         run: |
           gcloud container clusters get-credentials "$GKE_CLUSTER" \
             --region "$GKE_REGION" \
             --project "$PROJECT_ID"
 
-      # 🚀 Deploy to Kubernetes
       - name: Deploy to Kubernetes
         run: |
           kubectl apply -f kubernetes-deployment.yaml
