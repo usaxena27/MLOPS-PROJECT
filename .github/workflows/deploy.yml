@@ -45,9 +45,10 @@ jobs:
       - name: Build and Push Image
         run: |
           docker build -t "$IMAGE:$GITHUB_SHA" .
-          docker push "$IMAGE:$GITHUB_SHA"
+          docker tag "$IMAGE:$GITHUB_SHA" "$IMAGE:latest"
           docker push "$IMAGE:$GITHUB_SHA"
           docker push "$IMAGE:latest"
+
 
       - name: Configure GKE Credentials
         run: |
