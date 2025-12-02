@@ -1,3 +1,18 @@
+name: CI/CD Deployment to GKE
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GKE_CLUSTER: "my-cluster"
+  GKE_REGION: "us-central1"
+  DEPLOYMENT_NAME: "mlops-app"
+  REPOSITORY: "us-central1-docker.pkg.dev/project-cdab2309-f11d-4cf6-8b4/my-repo"
+  IMAGE: "us-central1-docker.pkg.dev/project-cdab2309-f11d-4cf6-8b4/my-repo/mlops-app"
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
